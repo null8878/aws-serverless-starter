@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS Serverless Starter - CRUD API with DynamoDB
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ItemsTable
+        STAGE: !Ref Stage
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Resources:
+  ItemsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-items"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  CreateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/shared/models.create
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItemsTable
+
+  GetItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/shared/models.get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ItemsTable
+
+  ListItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/shared/models.list_items
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ItemsTable
+
+  UpdateItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/shared/models.update
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItemsTable
+
+  DeleteItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: functions/shared/models.delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItemsTable
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        AllowHeaders: ["Content-Type", "Authorization"]
+
+  CreateItemRoute:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      ApiId: !Ref Api
+      Path: /items
+      Method: POST
+      FunctionName: !GetAtt CreateItemFunction.Arn
+
+  GetItemRoute:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      ApiId: !Ref Api
+      Path: /items/{id}
+      Method: GET
+      FunctionName: !GetAtt GetItemFunction.Arn
+
+  ListItemsRoute:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      ApiId: !Ref Api
+      Path: /items
+      Method: GET
+      FunctionName: !GetAtt ListItemsFunction.Arn
+
+  UpdateItemRoute:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      ApiId: !Ref Api
+      Path: /items/{id}
+      Method: PUT
+      FunctionName: !GetAtt UpdateItemFunction.Arn
+
+  DeleteItemRoute:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      ApiId: !Ref Api
+      Path: /items/{id}
+      Method: DELETE
+      FunctionName: !GetAtt DeleteItemFunction.Arn
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/items"
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref ItemsTable
