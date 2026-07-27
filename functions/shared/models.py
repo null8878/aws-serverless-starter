@@ -19,7 +19,8 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def create(event, context):
+def create(event, context)():
+    """TODO: Add docstring."""
     try:
         body = json.loads(event.get("body", "{}"))
 
