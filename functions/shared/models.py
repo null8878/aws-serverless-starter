@@ -19,8 +19,30 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def create(event, context)():
-    """TODO: Add docstring."""
+def root(event, context):
+    """API info endpoint served at the domain root."""
+    return {
+        "statusCode": 200,
+        "headers": _cors_headers(),
+        "body": json.dumps(
+            {
+                "service": "AWS Serverless Starter",
+                "version": "1.0.0",
+                "endpoints": {
+                    "GET /": "this page",
+                    "POST /items": "create an item",
+                    "GET /items": "list items",
+                    "GET /items/{id}": "get an item",
+                    "PUT /items/{id}": "update an item",
+                    "DELETE /items/{id}": "delete an item",
+                },
+            }
+        ),
+    }
+
+
+def create(event, context):
+    """Create a new item in the table."""
     try:
         body = json.loads(event.get("body", "{}"))
 

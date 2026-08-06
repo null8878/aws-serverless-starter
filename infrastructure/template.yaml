@@ -15,7 +15,7 @@ Globals:
 Parameters:
   Stage:
     Type: String
-    Default: dev
+    Default: prod
     AllowedValues: [dev, staging, prod]
 
 Resources:
@@ -31,45 +31,100 @@ Resources:
         - AttributeName: id
           KeyType: HASH
 
+  RootFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../functions/
+      Handler: shared.models.root
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Events:
+        Root:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /
+            Method: GET
+
   CreateItemFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: functions/shared/models.create
+      CodeUri: ../functions/
+      Handler: shared.models.create
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ItemsTable
+      Events:
+        CreateItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /items
+            Method: POST
 
   GetItemFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: functions/shared/models.get
+      CodeUri: ../functions/
+      Handler: shared.models.get
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref ItemsTable
+      Events:
+        GetItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /items/{id}
+            Method: GET
 
   ListItemsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: functions/shared/models.list_items
+      CodeUri: ../functions/
+      Handler: shared.models.list_items
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref ItemsTable
+      Events:
+        ListItems:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /items
+            Method: GET
 
   UpdateItemFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: functions/shared/models.update
+      CodeUri: ../functions/
+      Handler: shared.models.update
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ItemsTable
+      Events:
+        UpdateItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /items/{id}
+            Method: PUT
 
   DeleteItemFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: functions/shared/models.delete
+      CodeUri: ../functions/
+      Handler: shared.models.delete
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ItemsTable
+      Events:
+        DeleteItem:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /items/{id}
+            Method: DELETE
 
   Api:
     Type: AWS::Serverless::HttpApi
@@ -79,46 +134,6 @@ Resources:
         AllowOrigins: ["*"]
         AllowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
         AllowHeaders: ["Content-Type", "Authorization"]
-
-  CreateItemRoute:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      ApiId: !Ref Api
-      Path: /items
-      Method: POST
-      FunctionName: !GetAtt CreateItemFunction.Arn
-
-  GetItemRoute:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      ApiId: !Ref Api
-      Path: /items/{id}
-      Method: GET
-      FunctionName: !GetAtt GetItemFunction.Arn
-
-  ListItemsRoute:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      ApiId: !Ref Api
-      Path: /items
-      Method: GET
-      FunctionName: !GetAtt ListItemsFunction.Arn
-
-  UpdateItemRoute:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      ApiId: !Ref Api
-      Path: /items/{id}
-      Method: PUT
-      FunctionName: !GetAtt UpdateItemFunction.Arn
-
-  DeleteItemRoute:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      ApiId: !Ref Api
-      Path: /items/{id}
-      Method: DELETE
-      FunctionName: !GetAtt DeleteItemFunction.Arn
 
 Outputs:
   ApiEndpoint:
